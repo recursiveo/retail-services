@@ -46,15 +46,16 @@ public class OrderService {
                 .bodyToMono(new ParameterizedTypeReference<List<InventoryResponse>>() {})
                 .block();
 
-
         boolean isInStockAll;
 
-        if(inventoryResponseList != null) {
+        if(inventoryResponseList != null && !inventoryResponseList.isEmpty()) {
             // check if all the products are present, if all the items are in stock, set the value as TRUE
             isInStockAll = inventoryResponseList.stream()
                     .allMatch(InventoryResponse::isInStock);
-        } else {
+        } else if (inventoryResponseList == null){
             throw new NullPointerException("API call to Inventory Service returned null.");
+        } else {
+            throw new RuntimeException("API call to Inventory Service returned empty result");
         }
 
         if(Boolean.TRUE.equals(isInStockAll)) {
