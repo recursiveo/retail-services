@@ -19,10 +19,7 @@ public class InventoryController {
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    public List<InventoryResponse> isInStock(@RequestParam("skuCodes") List<String> skuCode) throws InterruptedException {
-        log.info("Sleeping");
-        Thread.sleep(10000);
-        log.info("Sleep ended");
+    public List<InventoryResponse> isInStock(@RequestParam("skuCodes") List<String> skuCode){
         return inventoryService.isInStock(skuCode);
     }
 
