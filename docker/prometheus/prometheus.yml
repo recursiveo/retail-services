@@ -1,21 +1,32 @@
 global:
-  scrape_interval: 2s
-  evaluation_interval: 2s
- 
+  scrape_interval: 10s
+  scrape_timeout: 10s
+  evaluation_interval: 10s
+
 scrape_configs:
   - job_name: 'prometheus'
+    metrics_path: '/metrics'
     static_configs:
       - targets: ['prometheus:9090']
-  - job_name: 'retail-services'
-    metrics_path: '/actuator/prometheus'
+  - job_name: 'eureka-discovery'
+    # metrics_path: '/actuator/prometheus'
     eureka_sd_configs:
-      - server: http://localhost:8080
-        refresh_interval: 30s
+      # as the microservice is running on the host machine and the prometheus service is running in a docker container,
+      # to access the host service , we give the host's address or alias [host.docker.internal]
+      - server: http://host.docker.internal:8761/eureka
+        basic_auth:
+          username: 'admin'
+          password: 'admin'
     relabel_configs:
       - source_labels: [__meta_eureka_app_name]
-        target_label: job
+        target_label: application
+      - source_labels: [__meta_eureka_app_instance_metadata_metrics_path]
+        target_label: __metrics__path__
+      - source_labels: [__address__]
+        target_label: instance
 
 
-# n this configuration, Prometheus will discover all services registered with Eureka 
-# and scrape metrics from them. The relabel_configs will set the job label to the name of the 
+
+# in this configuration, Prometheus will discover all services registered with Eureka
+# and scrape metrics from them. The relabel_configs will set the application label to the name of the
 # service as registered in Eureka (__meta_eureka_app_name), so you can still differentiate metrics from different services.
