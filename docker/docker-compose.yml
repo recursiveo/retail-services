@@ -2,7 +2,7 @@ version: '3.8'
 
 name: retail-services
 services:
-  # database setup
+  ## database setup
   mysql:
     image: mysql:latest
     command: --default-authentication-plugin=mysql_native_password
@@ -25,6 +25,8 @@ services:
       - "27017:27017"
     networks: 
       - mongo-compose-network
+    volumes:
+      - mongo_data:/data/db
 
   mongo-express:
     image: mongo-express:latest
@@ -42,19 +44,49 @@ services:
     depends_on:
       - mongo
 
-  # Security
-  keyclock:
-    image: quay.io/keycloak/keycloak:23.0.1
-    command: start-dev
-    environment:
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin
+  ## Security
+  keyclock-mysql:
+    container_name: keyclock-mysql
+    image: mysql:latest
     ports:
-      - "8090:8080"
+      - "3307:3306"
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: keyclock
+      MYSQL_USER: keyclock
+      MYSQL_PASSWORD: password
+    volumes:
+      - ./keyclock/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - keyclock_data:/var/lib/mysql
     networks:
       - keyclock-network
 
-  # For distributed tracing - Grafana stack
+  keyclock:
+    image: quay.io/keycloak/keycloak:23.0.1
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      DB_VENDOR: MYSQL
+      DB_ADDR: keyclock-mysql
+      # DB_PORT: 3306
+      DB_DATABASE: keyclock
+      DB_USER: keyclock
+      DB_SCHEMA: public
+      DB_PASSWORD: password
+
+    ports:
+      - "8090:8080"
+    volumes:
+      - ./keyclock/realms:/opt/keycloak/data/import
+    depends_on: [keyclock-mysql]
+#    restart: unless-stopped
+    networks:
+      - keyclock-network
+
+
+  ## For distributed tracing - Grafana stack
   loki:
     image: grafana/loki:main
     command: [ "-config.file=/etc/loki/local-config.yaml" ]
@@ -105,7 +137,7 @@ services:
       - dist-tracing-network
     restart: on-failure
 
-  # Kafka config
+  ## Kafka config
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
     environment:
@@ -147,3 +179,5 @@ networks:
 
 volumes:
   mysql_data:
+  mongo_data:
+  keyclock_data:
