@@ -23,7 +23,7 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: root
     ports:
       - "27017:27017"
-    networks:
+    networks: 
       - mongo-compose-network
     volumes:
       - mongo_data:/data/db
@@ -39,7 +39,7 @@ services:
       ME_CONFIG_BASICAUTH_USERNAME: user
       ME_CONFIG_BASICAUTH_PASSWORD: user
       ME_CONFIG_MONGODB_URL: mongodb://root:root@mongo:27017/
-    networks:
+    networks: 
       - mongo-compose-network
     depends_on:
       - mongo
@@ -81,7 +81,7 @@ services:
     volumes:
       - ./keyclock/realms:/opt/keycloak/data/import
     depends_on: [keyclock-mysql]
-    #    restart: unless-stopped
+#    restart: unless-stopped
     networks:
       - keyclock-network
 
@@ -157,87 +157,15 @@ services:
       - "9092:9092"
     environment:
       KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
-      # KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
-      # KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
+      # KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
     networks:
       - kafka-network
-
-
-  ## Microservices
-  discovery-server:
-    container_name: discovery-server
-    build: ../discovery-server
-    ports:
-      - "8761:8761"
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-
-  api-gateway:
-    container_name: api-gateway
-    build: ../api-gateway
-    ports:
-      - "8080:8080"
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-    depends_on:
-      - discovery-server
-      - keyclock
-
-  order-service:
-    container_name: order-service
-    build: ../order-service
-    ports:
-      - "8083:8083"
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-    depends_on:
-      - discovery-server
-      - mysql
-      - kafka
-      - inventory-service
-      - api-gateway
-
-  inventory-service:
-    container_name: inventory-service
-    build: ../inventory-service
-    ports:
-      - "8081:8081"
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-    depends_on:
-      - discovery-server
-      - mysql
-      - api-gateway
-
-  product-service:
-    container_name: product-service
-    build: ../product-service
-    ports:
-      - "8084:8084"
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-    depends_on:
-      - discovery-server
-      - mongo
-      - api-gateway
-
-  notification-service:
-    container_name: notification-service
-    build: ../notification-service
-    ports:
-      - "8082:8082"
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-    depends_on:
-      - discovery-server
-      - kafka
-      - api-gateway
 
 networks:
   mongo-compose-network:
